@@ -1,1 +1,14 @@
-file:///workspace/spacefleet-economy-lab/hostile-pinch-live.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
+<title>Hostile Pinch · Economy Lab</title>
+</head><body>
+<script>
+(async()=>{
+  const [a,b]=await Promise.all([fetch('part1.txt').then(r=>r.text()),fetch('part2.txt').then(r=>r.text())]);
+  document.open(); document.write(a+b); document.close();
+})();
+</script>
+</body></html>
