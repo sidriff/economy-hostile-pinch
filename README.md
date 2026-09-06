@@ -2,7 +2,7 @@
 
 Phone-first 2D thrash of the **Hostile Pinch** economy thesis. Public lab sketch — **not** the live Spacefleet graph, and **not** shipped on [spacefleet-labs.pages.dev](https://spacefleet-labs.pages.dev).
 
-**Play:** this repo’s `index.html` (GitHub Pages from `main` / root when enabled): https://sidriff.github.io/economy-hostile-pinch/
+**Play:** this repo’s `index.html`. Enable GitHub Pages once (Settings → Pages → Deploy from a branch → `main` / `/`). Then: https://sidriff.github.io/economy-hostile-pinch/
 
 **Repo:** https://github.com/sidriff/economy-hostile-pinch
 

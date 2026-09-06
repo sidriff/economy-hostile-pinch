@@ -29,14 +29,16 @@ header{padding:8px 10px 6px;border-bottom:1px solid var(--line);position:sticky;
 .warn{color:var(--hot)}
 .danger{color:var(--bad)}
 #mapwrap{padding:6px 8px 0}
-svg.map{width:100%;height:auto;display:block;background:#14090c;border:1px solid var(--line)}
+svg.map{width:100%;max-height:248px;height:auto;display:block;background:#14090c;border:1px solid var(--line)}
+.legend{display:flex;gap:8px;flex-wrap:wrap;padding:4px 2px 0;color:var(--mute);font-size:10px}
+.legend b{font-weight:700}
 .sys{cursor:pointer}
-.sys circle{fill:#2a1612;stroke:var(--acc);stroke-width:1.2}
-.sys.here circle{fill:var(--acc);stroke:var(--hot)}
-.sys.nbr circle{stroke:var(--hot)}
-.sys.rich circle{stroke:var(--hot);fill:#3a2210}
-.sys.sel circle{stroke:#fff;stroke-width:2}
-.sys text{fill:var(--ink);font-size:8px;pointer-events:none}
+.sys circle.dot{fill:#2a1612;stroke:var(--acc);stroke-width:1.2}
+.sys.here circle.dot{fill:var(--acc);stroke:var(--hot)}
+.sys.nbr circle.dot{stroke:var(--hot)}
+.sys.rich circle.dot{stroke:var(--hot);fill:#3a2210}
+.sys.sel circle.dot{stroke:#fff;stroke-width:2}
+.sys text{fill:var(--ink);font-size:8px}
 lane{stroke:#3a2218}
 .npc text{font-size:7px;font-weight:700}
 nav.tabs{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:6px}
@@ -49,7 +51,7 @@ nav.tabs button.on{color:var(--hot);background:#221014}
 .muted{color:var(--mute)}
 .ok{color:var(--ok)}
 button.act{background:#2a1610;color:var(--hot);border:1px solid var(--acc);padding:8px 10px;font:inherit;cursor:pointer;width:100%;margin-top:6px}
-button.act:disabled{opacity:.4;cursor:not-allowed}
+button.act:disabled{opacity:.38;cursor:not-allowed;text-decoration:line-through;border-style:dashed}
 button.act.sec{color:var(--ink);border-color:var(--line)}
 button.act.bad{color:#f0c0b0;border-color:var(--bad)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -95,10 +97,10 @@ const SYS = {
   ash:    {id:'ash',    name:'Ash Dock', x:48,  y:248, rich:0, poor:1},
   rust:   {id:'rust',   name:'Rust',     x:42,  y:150, rich:0, poor:0},
   vein:   {id:'vein',   name:'Vein',     x:58,  y:68,  rich:0, poor:0},
-  ore:    {id:'ore',    name:'Ore',      x:148, y:38,  rich:1, poor:0},
-  hollow: {id:'hollow', name:'Hollow',   x:248, y:48,  rich:0, poor:1},
-  crown:  {id:'crown',  name:'Crown',    x:218, y:128, rich:1, poor:0},
-  gilt:   {id:'gilt',   name:'Gilt',     x:300, y:176, rich:1, poor:0},
+  ore:    {id:'ore',    name:'Ore',      x:148, y:38,  rich:1, poor:0, lx:9, ly:16},
+  hollow: {id:'hollow', name:'Hollow',   x:248, y:48,  rich:0, poor:1, lx:-38, ly:-8},
+  crown:  {id:'crown',  name:'Crown',    x:218, y:128, rich:1, poor:0, lx:10, ly:-8},
+  gilt:   {id:'gilt',   name:'Gilt',     x:288, y:176, rich:1, poor:0, lx:-28, ly:-8},
   ember:  {id:'ember',  name:'Ember',    x:122, y:186, rich:0, poor:0},
   drift:  {id:'drift',  name:'Drift',    x:228, y:228, rich:0, poor:0},
   spur:   {id:'spur',   name:'Spur',     x:142, y:268, rich:0, poor:1}
@@ -326,12 +328,13 @@ function doFight(m){
     if(Math.random()<shipRisk && S.ships.length){
       const g=loseShip();
       shipMsg=' Lost '+g.kind+'.';
-      if(!S.ships.length){ log('Hulls gone. Run ends.'); arrive(to,false); modal=null; render(); return; }
+      if(!S.ships.length){ log('Hulls gone. Run ends.'); arrive(to,false); render(); return; }
     }
     log('Pinched. −¤'+tax+(lost.n?' · cargo '+lost.n:'')+shipMsg);
     arrive(to,false);
   }
-  modal=null; render();
+  if(!S.over) modal=null;
+  render();
 }
 
 function doLeave(m){
@@ -349,7 +352,8 @@ function doLeave(m){
     log('No cells. Burn a turn, leak ¤'+leak+'.');
     arrive(to,true);
   }
-  modal=null; render();
+  if(!S.over) modal=null;
+  render();
 }
 
 function doTrade(m){
@@ -391,7 +395,8 @@ function doTrade(m){
     }
     arrive(to,false);
   }
-  modal=null; render();
+  if(!S.over) modal=null;
+  render();
 }
 
 function buyShip(kind){
@@ -478,8 +483,9 @@ function mapSvg(){
     const here=s.id===S.here, nbr=neighbors(S.here).includes(s.id), sel=s.id===dest;
     const cls=['sys', here?'here':'', nbr?'nbr':'', s.rich?'rich':'', sel?'sel':''].filter(Boolean).join(' ');
     return `<g class="${cls}" data-id="${s.id}">
-      <circle cx="${s.x}" cy="${s.y}" r="${s.rich?8:6}"/>
-      <text x="${s.x+9}" y="${s.y-7}">${s.rich?'★ ':''}${s.name}</text>
+      <circle class="hit" cx="${s.x}" cy="${s.y}" r="16" fill="transparent" stroke="none"/>
+      <circle class="dot" cx="${s.x}" cy="${s.y}" r="${s.rich?8:6}"/>
+      <text x="${s.x+(s.lx??9)}" y="${s.y+(s.ly??-7)}">${s.rich?'★ ':''}${s.name}</text>
     </g>`;
   }).join('');
   return `<svg class="map" viewBox="0 0 340 300" xmlns="http://www.w3.org/2000/svg">${lanes}${npcs}${sys}</svg>`;
@@ -520,20 +526,19 @@ function marketPanel(){
     return `<button class="act sec" data-buy-good="${k}" ${free()<=0||S.purse<px?'disabled':''}>${k} ¤${px}<br><span class="tiny">sell here ¤${sellPx(k,sys)}${sys.rich?' ★':''}</span></button>`;
   }).join('');
   return `<div class="card"><h3>MARKET · ${sys.name}${sys.rich?' ★ RICH HUB':''}</h3>
-    <div class="tiny">Spreads are flat. The bump is at Crown / Ore / Gilt.</div>
+    <div class="tiny">Spreads are flat. The bump is at Crown / Ore / Gilt.${free()<=0?' <span class="warn">Hold full — scrap outfit or sell to free a slot.</span>':''}</div>
     <div class="grid" style="margin-top:6px">${buy}</div></div>
-    <div class="card"><h3>HOLD ${S.goods.length}</h3>${stock||'<div class="muted">Empty hold.</div>'}</div>`;
+    <div class="card"><h3>HOLD ${S.goods.length}${free()<=0?' · FULL':''}</h3>${stock||'<div class="muted">Empty hold.</div>'}</div>`;
 }
 
 function travelPanel(){
   const nbrs=neighbors(S.here);
-  if(!dest && nbrs[0]) dest=nbrs[0];
-  if(dest && !nbrs.includes(dest)) dest=nbrs[0];
+  if(!dest || !nbrs.includes(dest)) dest = nbrs.find(id => SYS[id].rich) || nbrs[0];
   const d=dest?SYS[dest]:null;
   const heat=d?laneHeat(S.here,dest):'quiet';
   const th=heatThreat(heat);
   const p=power();
-  const stance = p < th.lo ? 'UNDER-ARMED' : p < th.hi ? 'contested teeth' : 'you cover it';
+  const stance = p < th.lo ? 'UNDER-ARMED' : p < th.hi ? 'inside the band' : 'you cover it';
   const cls = p < th.lo ? 'danger' : p < th.hi ? 'warn' : 'ok';
   const chips = nbrs.map(id=>`<button class="act ${id===dest?'':'sec'}" data-dest="${id}" style="margin:0">${SYS[id].name}${SYS[id].rich?' ★':''}</button>`).join('');
   return `<div class="card"><h3>LANE FROM ${SYS[S.here].name}</h3>
@@ -628,12 +633,16 @@ function render(){
         <div><div class="brand">HOSTILE PINCH</div><div class="sub">${sys.name}${sys.rich?' ★':''} · ${S.ships.map(s=>s.kind[0]).join('')||'—'}</div></div>
         <div style="text-align:right">
           <div>T <span class="stat">${Math.min(S.turn,TURNS)}</span>/${TURNS} · ¤<span class="stat">${S.purse}</span> · cap ${used()}/${cap()}</div>
-          ${poor()?'<div class="poor">POOR</div>':'<div class="sub">pwr '+power()+'</div>'}
+          <div class="row" style="justify-content:flex-end;gap:6px">${poor()?'<div class="poor">POOR</div>':'<div class="sub">pwr '+power()+'</div>'}
+            <button class="act sec" data-how="1" style="width:auto;margin:0;padding:2px 6px;font-size:10px">HOW</button>
+          </div>
         </div>
       </div>
       ${hudHtml()}
     </header>
-    <div id="mapwrap">${mapSvg()}</div>
+    <div id="mapwrap">${mapSvg()}
+      <div class="legend"><b style="color:#c44a3a">W</b> War <b style="color:#c47848">P</b> Pirate <b style="color:#6a8a9a">L</b> Patrol <b style="color:#7a9a6a">T</b> Trade · ★ rich hub</div>
+    </div>
     <nav class="tabs">
       <button data-tab="travel" class="${tab==='travel'?'on':''}">TRAVEL</button>
       <button data-tab="market" class="${tab==='market'?'on':''}">MARKET</button>
