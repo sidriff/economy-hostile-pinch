@@ -2,9 +2,13 @@
 
 Phone-first 2D thrash of the **Hostile Pinch** economy thesis. Public lab sketch — **not** the live Spacefleet graph, and **not** shipped on [spacefleet-labs.pages.dev](https://spacefleet-labs.pages.dev).
 
-**Play:** this repo’s `index.html`. Enable GitHub Pages once (Settings → Pages → Deploy from a branch → `main` / `/`). Then: https://sidriff.github.io/economy-hostile-pinch/
+**Play:** https://sidriff.github.io/economy-hostile-pinch/
 
 **Repo:** https://github.com/sidriff/economy-hostile-pinch
+
+## Latest retune (risk/reward)
+
+Single clean `index.html` (no chunk loader). Quiet markets sell≈buy (flat spreads). ★ rich hubs pay: Slag 18 / Parts 25 / Spice 33 / Lux 44. Combat hulls: Frigate ¤62, Gunboat ¤54.
 
 ## Thesis
 
