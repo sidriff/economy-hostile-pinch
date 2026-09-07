@@ -132,7 +132,7 @@ const STANCES = {
   Pirate:    {line:'Hunt Patrols (thin) · Trade fleets (fat loot payday).', hunt:['Patrol','Trade']}
 };
 
-const TURNS = 14;
+const TURNS = 30;
 let S, tab='travel', dest=null, modal=null, splash=true, how=false;
 
 function fresh(stance){
@@ -360,7 +360,8 @@ function doFight(m){
     const tax=Math.min(S.purse, Math.ceil(11*mlt));
     pay(tax);
     let shipMsg='';
-    const shipRisk = power()+1 < enc.str ? 0.28 : 0.1;
+    let shipRisk = power()+1 < enc.str ? 0.42 : 0.16;
+    if(S.ships.length===1) shipRisk *= 1.35;
     if(Math.random()<shipRisk && S.ships.length){
       const g=loseShip();
       shipMsg=' Lost '+g.kind+'.';
@@ -664,7 +665,7 @@ function howSheet(){
     <p>2. Read ARM VS HAUL — stance, teeth vs Pirate 5–10 / War 7–12, and free goods slots.</p>
     <p>3. FLEET — Hauler hauls; Frigate/Gunboat bite. Shared cap.</p>
     <p>4. MARKET — buy flat; sell ★ at Crown / Ore / Gilt.</p>
-    <p>5. TRAVEL — tap a neighbor, read quiet/hot/contested, LAUNCH. Fight / Leave / Tribute. ~14 turns. Ledger.</p>
+    <p>5. TRAVEL — tap a neighbor, read quiet/hot/contested, LAUNCH. Fight / Leave / Tribute. ~30 turns. Ledger.</p>
     <button class="act" data-how-off="1">CLOSE</button>
   </div></div>`;
 }
