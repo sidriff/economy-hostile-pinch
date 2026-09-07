@@ -68,6 +68,9 @@ button.act.bad{color:#f0c0b0;border-color:var(--bad)}
 .ledger dt{color:var(--mute)} .ledger dd{text-align:right}
 .ledger{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin:8px 0}
 .tiny{font-size:10px;color:var(--mute)}
+button.act.stance{padding:12px 12px;text-align:left;min-height:68px}
+button.act.stance b{display:block;letter-spacing:.1em;margin-bottom:4px;font-size:13px}
+.stance-tag{color:var(--hot);letter-spacing:.1em;font-weight:700}
 </style>
 </head>
 <body>
@@ -123,12 +126,20 @@ const NPC_T = {
   Trade:  {ch:'T', col:'#7a9a6a', lo:2, hi:5}
 };
 
+const STANCES = {
+  Honest:    {line:'Haul ★ hubs. Pirates are a duty hazard — not a hunt.', hunt:[]},
+  Privateer: {line:'Hunt Pirates — thin civic bounty for clearing lanes.', hunt:['Pirate']},
+  Pirate:    {line:'Hunt Patrols (thin) · Trade fleets (fat loot payday).', hunt:['Patrol','Trade']}
+};
+
 const TURNS = 14;
 let S, tab='travel', dest=null, modal=null, splash=true, how=false;
 
-function fresh(){
+function fresh(stance){
+  const st = STANCES[stance] ? stance : 'Honest';
   S = {
     here:'ash', turn:1, purse:60,
+    stance: st,
     ships:[{kind:'Scout'}],
     weapons:1, cons:2, crew:1,
     goods:[],
@@ -138,6 +149,7 @@ function fresh(){
     over:false
   };
   spawnNpcs();
+  log(st.toUpperCase()+' stance. '+STANCES[st].line);
   log('Ash Dock. Thin purse. The rich hubs pay — if you arrive.');
 }
 
@@ -167,13 +179,13 @@ function spawnNpcs(){
   const quiet = ['ash','spur','hollow','drift'];
   const mid = ['rust','vein','ember'];
   const list=[];
-  const n = rnd(4,6);
+  const n = rnd(7,10);
   for(let i=0;i<n;i++){
     let park, type;
     const roll=Math.random();
-    if(roll<0.55){ park=pick(rich); type=pick(['War','Pirate','Pirate','Patrol']); }
-    else if(roll<0.82){ park=pick(mid); type=pick(['Pirate','Patrol','Trade']); }
-    else { park=pick(quiet); type=pick(['Trade','Trade','Patrol']); }
+    if(roll<0.55){ park=pick(rich); type=pick(['War','War','Pirate','Pirate','Pirate','Patrol','Patrol']); }
+    else if(roll<0.82){ park=pick(mid); type=pick(['Pirate','Pirate','Patrol','Patrol','Trade','Trade']); }
+    else { park=pick(quiet); type=pick(['Trade','Trade','Patrol','Pirate','Patrol']); }
     const s=SYS[park];
     const ang=Math.random()*Math.PI*2, r=16+Math.random()*22;
     list.push({
@@ -209,7 +221,7 @@ function heatThreat(h){
 }
 
 function encounterChance(h){
-  return h==='contested'?0.82 : h==='hot'?0.55 : 0.26;
+  return h==='contested'?0.86 : h==='hot'?0.62 : 0.32;
 }
 
 function pickEncounter(from,to){
@@ -307,15 +319,39 @@ function launch(){
   render();
 }
 
+function fightMods(type){
+  const st=S.stance;
+  if(st==='Pirate' && type==='Trade')
+    return {odds:0.14, kind:'fat', crateP:0.72, tag:'pirate payday'};
+  if(st==='Pirate' && type==='Patrol')
+    return {odds:0.10, kind:'thin', crateP:0.38, tag:'patrol scrape'};
+  if(st==='Privateer' && type==='Pirate')
+    return {odds:0.12, kind:'thin', crateP:0.38, tag:'privateer clear'};
+  if(st==='Honest'){
+    const scrap = (type==='Pirate' || type==='War');
+    return {odds:0, kind: scrap?'scrap':'base', crateP: scrap?0.22:0.45, tag: scrap?'scrap salvage':null};
+  }
+  return {odds:-0.05, kind:'base', crateP:0.45, tag:null};
+}
+
+function fightSalvage(enc, heat, mods){
+  const extra = (enc.str>8?6:0) + (heat==='contested'?3:heat==='hot'?1:0);
+  if(mods.kind==='fat') return 20 + rnd(8,18) + extra;
+  if(mods.kind==='thin') return 5 + rnd(0,5);
+  if(mods.kind==='scrap') return 3 + rnd(0,4);
+  return 10 + rnd(0,10) + extra;
+}
+
 function doFight(m){
   const {enc, heat, to}=m;
   const d = power() - enc.str;
-  const winP = clamp(0.16 + d*0.11, 0.08, 0.93);
+  const mods = fightMods(enc.type);
+  const winP = clamp(0.16 + d*0.11 + mods.odds, 0.08, 0.93);
   if(Math.random()<winP){
-    const coin = 10 + rnd(0,10) + (enc.str>8?6:0) + (heat==='contested'?3:heat==='hot'?1:0);
+    const coin = fightSalvage(enc, heat, mods);
     gain(coin,'salvage');
-    if(free()>0 && Math.random()<0.45){ S.goods.push({k:pick(Object.keys(GOODS))}); log('Salvage crate stowed.'); }
-    log('Fight won. Salvage ¤'+coin+'.');
+    if(free()>0 && Math.random()<mods.crateP){ S.goods.push({k:pick(Object.keys(GOODS))}); log('Salvage crate stowed.'); }
+    log('Fight won'+(mods.tag?' · '+mods.tag:'')+'. Salvage ¤'+coin+'.');
     arrive(to,false);
   } else {
     const mlt=pinchMult(heat, enc.str);
@@ -456,7 +492,7 @@ function hudHtml(){
   const underP = p<5, underW=p<7;
   const thin = free()<2;
   return `<div id="hud">
-    <div class="hud-lab">ARM VS HAUL · pwr ${p} <span class="${underP?'danger':underW?'warn':''}">${underP?'under Pirate':underW?'under War':'covers bands'}</span> · goods ${S.goods.length} · free ${free()}${thin?' <span class="warn">thin haul</span>':''}</div>
+    <div class="hud-lab">ARM VS HAUL · <span class="stance-tag">STANCE ${S.stance.toUpperCase()}</span> · pwr ${p} <span class="${underP?'danger':underW?'warn':''}">${underP?'under Pirate':underW?'under War':'covers bands'}</span> · goods ${S.goods.length} · free ${free()}${thin?' <span class="warn">thin haul</span>':''}</div>
     <div class="meter">
       <div class="band p" style="left:${5/max*100}%;width:${5/max*100}%"></div>
       <div class="band w" style="left:${7/max*100}%;width:${5/max*100}%"></div>
@@ -547,13 +583,23 @@ function travelPanel(){
     ${d?`<div class="card"><h3>PRE-LAUNCH · ${d.name}</h3>
       <div>Odds: <b class="${heat==='contested'?'danger':heat==='hot'?'warn':'ok'}">${heat.toUpperCase()}</b> · ${Math.round(encounterChance(heat)*100)}% contact</div>
       <div>Your pwr <b>${p}</b> vs ${th.label} ${th.lo}–${th.hi} · <span class="${cls}">${stance}</span></div>
-      <div class="tiny">Markers on the map bias the roll. Leave burns cells (or a turn). Fight risks hulls. War/Pirate trade is tribute.</div>
+      <div class="tiny">Stance ${S.stance}: ${STANCES[S.stance].line} Markers bias the roll. Leave burns cells. Fight risks hulls. War/Pirate trade is tribute.</div>
       <button class="act" data-launch="1" ${S.over?'disabled':''}>LAUNCH → ${d.name}</button>
     </div>`:''}`;
 }
 
 function logHtml(){
   return `<div id="log">${S.log.slice(0,4).map(x=>`<div>· ${x}</div>`).join('')}</div>`;
+}
+
+function huntHint(type){
+  const m=fightMods(type);
+  if(m.tag==='pirate payday') return 'Hunt match — pirate payday (fat salvage).';
+  if(m.tag==='patrol scrape') return 'Hunt match — patrol scrape (thin salvage).';
+  if(m.tag==='privateer clear') return 'Hunt match — privateer clear (thin civic bounty).';
+  if(m.tag==='scrap salvage') return 'Honest duty hazard — scrap salvage only.';
+  if(m.odds<0) return 'Wrong type — no hunt bonus, odds thin.';
+  return 'No hunt bonus.';
 }
 
 function encSheet(){
@@ -566,7 +612,7 @@ function encSheet(){
     <div class="tiny">${m.heat.toUpperCase()} LANE</div>
     <div class="big">${e.type.toUpperCase()} ${e.str}</div>
     <div>Your teeth ${p} vs ${e.str} · <span class="${under?'danger':'ok'}">${under?'they pinch harder':'you have a chance'}</span></div>
-    <div class="tiny" style="margin-top:6px">Fight: auto-resolve. Leave: burn a cell, or a turn + coin if dry. Trade: War/Pirate want tribute.</div>
+    <div class="tiny" style="margin-top:6px">${huntHint(e.type)} Fight: auto-resolve. Leave: burn a cell, or a turn + coin if dry. Trade: War/Pirate want tribute.</div>
     <div class="choices">
       <button class="act bad" data-enc="fight">FIGHT</button>
       <button class="act sec" data-enc="leave">LEAVE${S.cons?` · burn 1 cell (${S.cons} left)`:' · no cells — burn a turn'}</button>
@@ -580,7 +626,7 @@ function endSheet(){
   const net = L.earned - L.tribute - L.cargo - L.shipVal;
   const broke = S.purse<10;
   return `<div class="overlay center"><div class="sheet">
-    <div class="tiny">END OF RUN · ${S.ships.length? 'turn '+Math.min(S.turn,TURNS)+'/'+TURNS : 'fleet gone'}</div>
+    <div class="tiny">END OF RUN · ${S.stance.toUpperCase()} · ${S.ships.length? 'turn '+Math.min(S.turn,TURNS)+'/'+TURNS : 'fleet gone'}</div>
     <div class="big">LEDGER</div>
     <div class="tiny">Gains are measured by costs.</div>
     <dl class="ledger">
@@ -600,10 +646,12 @@ function splashSheet(){
   return `<div class="overlay center"><div class="sheet">
     <div class="tiny">SPACEFLEET · ECONOMY LAB · SEARCH</div>
     <div class="big">HOSTILE PINCH</div>
-    <p>Quiet markets barely pay. ★ hubs (Crown / Ore / Gilt) pay real premiums — if you survive the pinch. Arm up for hot lanes, or grind poor docks for a thin but safe floor.</p>
+    <p>Quiet markets barely pay. ★ hubs (Crown / Ore / Gilt) pay real premiums — if you survive the pinch. Pick a stance. Big taps.</p>
     <p class="tiny" style="margin-top:8px">Not the live lab graph. Not on spacefleet-labs.pages.dev.</p>
     <div class="choices">
-      <button class="act" data-deploy="1">DEPLOY</button>
+      <button class="act stance" data-stance="Honest"><b>HONEST</b><span class="tiny">${STANCES.Honest.line}</span></button>
+      <button class="act stance" data-stance="Privateer"><b>PRIVATEER</b><span class="tiny">${STANCES.Privateer.line}</span></button>
+      <button class="act stance" data-stance="Pirate"><b>PIRATE</b><span class="tiny">${STANCES.Pirate.line}</span></button>
       <button class="act sec" data-how="1">HOW TO PLAY</button>
     </div>
   </div></div>`;
@@ -612,11 +660,11 @@ function splashSheet(){
 function howSheet(){
   return `<div class="overlay center"><div class="sheet">
     <div class="big">60s</div>
-    <p>1. Read ARM VS HAUL — teeth vs Pirate 5–10 / War 7–12, and free goods slots.</p>
-    <p>2. FLEET — Hauler hauls; Frigate/Gunboat bite. Shared cap.</p>
-    <p>3. MARKET — buy flat; sell ★ at Crown / Ore / Gilt.</p>
-    <p>4. TRAVEL — tap a neighbor, read quiet/hot/contested, LAUNCH.</p>
-    <p>5. Fight / Leave / Tribute. ~14 turns. Ledger scores gains against costs.</p>
+    <p>1. Pick stance: Honest hauls ★ hubs; Privateer hunts Pirates (thin bounty); Pirate hunts Patrols (thin) and Trade (fat payday).</p>
+    <p>2. Read ARM VS HAUL — stance, teeth vs Pirate 5–10 / War 7–12, and free goods slots.</p>
+    <p>3. FLEET — Hauler hauls; Frigate/Gunboat bite. Shared cap.</p>
+    <p>4. MARKET — buy flat; sell ★ at Crown / Ore / Gilt.</p>
+    <p>5. TRAVEL — tap a neighbor, read quiet/hot/contested, LAUNCH. Fight / Leave / Tribute. ~14 turns. Ledger.</p>
     <button class="act" data-how-off="1">CLOSE</button>
   </div></div>`;
 }
@@ -631,7 +679,7 @@ function render(){
   app.innerHTML = `
     <header>
       <div class="row">
-        <div><div class="brand">HOSTILE PINCH</div><div class="sub">${sys.name}${sys.rich?' ★':''} · ${S.ships.map(s=>s.kind[0]).join('')||'—'}</div></div>
+        <div><div class="brand">HOSTILE PINCH</div><div class="sub">${S.stance.toUpperCase()} · ${sys.name}${sys.rich?' ★':''} · ${S.ships.map(s=>s.kind[0]).join('')||'—'}</div></div>
         <div style="text-align:right">
           <div>T <span class="stat">${Math.min(S.turn,TURNS)}</span>/${TURNS} · ¤<span class="stat">${S.purse}</span> · cap ${used()}/${cap()}</div>
           <div class="row" style="justify-content:flex-end;gap:6px">${poor()?'<div class="poor">POOR</div>':'<div class="sub">pwr '+power()+'</div>'}
@@ -661,7 +709,7 @@ function render(){
 function bind(){
   const app=$('#app');
   app.onclick = (ev)=>{
-    const t=ev.target.closest('[data-tab],[data-id],[data-dest],[data-launch],[data-enc],[data-buy-ship],[data-scrap],[data-buy-out],[data-sell-out],[data-buy-good],[data-sell-good],[data-deploy],[data-how],[data-how-off],[data-new]');
+    const t=ev.target.closest('[data-tab],[data-id],[data-dest],[data-launch],[data-enc],[data-buy-ship],[data-scrap],[data-buy-out],[data-sell-out],[data-buy-good],[data-sell-good],[data-stance],[data-how],[data-how-off],[data-new]');
     if(!t) return;
     if(t.dataset.tab){ tab=t.dataset.tab; render(); return; }
     if(t.dataset.id){
@@ -682,10 +730,10 @@ function bind(){
     if(t.dataset.sellOut){ sellOutfit(t.dataset.sellOut); return; }
     if(t.dataset.buyGood){ buyGood(t.dataset.buyGood); return; }
     if(t.dataset.sellGood){ sellGood(+t.dataset.sellGood); return; }
-    if(t.dataset.deploy){ splash=false; how=false; fresh(); render(); return; }
+    if(t.dataset.stance){ splash=false; how=false; modal=null; tab='travel'; dest=null; fresh(t.dataset.stance); render(); return; }
     if(t.dataset.how){ how=true; render(); return; }
     if(t.dataset.howOff){ how=false; render(); return; }
-    if(t.dataset.new){ splash=false; modal=null; how=false; fresh(); tab='travel'; dest=null; render(); return; }
+    if(t.dataset.new){ splash=true; modal=null; how=false; dest=null; tab='travel'; render(); return; }
   };
 }
 
