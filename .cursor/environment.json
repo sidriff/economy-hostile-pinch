@@ -1,0 +1,13 @@
+{
+  "name": "Hostile Pinch — Economy Lab",
+  "ports": [
+    { "name": "web", "port": 8766 }
+  ],
+  "terminals": [
+    {
+      "name": "web",
+      "command": "python3 -m http.server 8766",
+      "description": "Serves the static Hostile Pinch game (index.html) at http://localhost:8766/"
+    }
+  ]
+}
