@@ -10,16 +10,18 @@
   --acc:#c47848;--hot:#e8a070;--bad:#c44a3a;--ok:#7a9a6a;--cool:#6a8a9a;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:var(--bg);color:var(--ink);font:12px/1.4 ui-monospace,"SF Mono",Menlo,Consolas,monospace;min-height:100%}
-body{display:flex;justify-content:center}
-#app{width:100%;max-width:460px;min-height:100vh;min-height:100dvh;background:var(--bg);border-left:1px solid var(--line);border-right:1px solid var(--line);display:flex;flex-direction:column}
-header{padding:8px 10px 6px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+html,body{background:var(--bg);color:var(--ink);font:12px/1.4 ui-monospace,"SF Mono",Menlo,Consolas,monospace;height:100%;overflow:hidden}
+#app{width:100%;height:100vh;height:100dvh;background:var(--bg);position:relative;overflow:hidden}
+#app.splash{display:flex;flex-direction:column}
+#app.splash header{display:none}
+#app.play{display:flex;flex-direction:column}
+header{padding:8px 10px 6px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 88%,transparent);z-index:5;flex-shrink:0}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .brand{color:var(--hot);letter-spacing:.08em;font-weight:700}
 .sub{color:var(--mute);font-size:10px}
 .stat{color:var(--acc)}
 .poor{background:var(--bad);color:#1a0808;font-weight:700;padding:1px 6px;letter-spacing:.12em}
-#hud{margin-top:6px;padding:6px 8px;background:var(--panel);border:1px solid var(--line)}
+#hud{margin-top:6px;padding:6px 8px;background:color-mix(in srgb,var(--panel) 92%,transparent);border:1px solid var(--line)}
 .hud-lab{color:var(--mute);font-size:10px;margin-bottom:3px}
 .meter{position:relative;height:10px;background:#2a1410;border:1px solid var(--line);margin:3px 0}
 .meter .fill{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#8a3a28,var(--acc));}
@@ -28,9 +30,9 @@ header{padding:8px 10px 6px;border-bottom:1px solid var(--line);position:sticky;
 .band.w{background:#c44a3a;border-left:1px dashed #f0b090}
 .warn{color:var(--hot)}
 .danger{color:var(--bad)}
-#mapwrap{padding:6px 8px 0}
-svg.map{width:100%;max-height:248px;height:auto;display:block;background:#14090c;border:1px solid var(--line)}
-.legend{display:flex;gap:8px;flex-wrap:wrap;padding:4px 2px 0;color:var(--mute);font-size:10px}
+#mapwrap{position:relative;flex:1 1 auto;min-height:0;background:#14090c}
+svg.map{width:100%;height:100%;display:block;background:#14090c}
+.legend{display:flex;gap:8px;flex-wrap:wrap;position:absolute;left:8px;bottom:6px;padding:3px 7px;color:var(--mute);font-size:10px;background:color-mix(in srgb,var(--bg) 78%,transparent);border:1px solid var(--line);pointer-events:none}
 .legend b{font-weight:700}
 .sys{cursor:pointer}
 .sys circle.dot{fill:#2a1612;stroke:var(--acc);stroke-width:1.2}
@@ -38,15 +40,15 @@ svg.map{width:100%;max-height:248px;height:auto;display:block;background:#14090c
 .sys.nbr circle.dot{stroke:var(--hot)}
 .sys.rich circle.dot{stroke:var(--hot);fill:#3a2210}
 .sys.sel circle.dot{stroke:#fff;stroke-width:2}
-.sys text{fill:var(--ink);font-size:8px}
-lane{stroke:#3a2218}
-.npc text{font-size:7px;font-weight:700}
-nav.tabs{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:6px}
+.sys text{fill:var(--ink);font-size:1em}
+.npc text{font-size:.88em;font-weight:700}
+#dock{display:flex;flex-direction:column;flex:0 1 auto;max-height:40vh;min-height:0;background:color-mix(in srgb,var(--bg) 90%,transparent);border-top:1px solid var(--line);z-index:5}
+nav.tabs{display:flex;border-bottom:1px solid var(--line);flex-shrink:0}
 nav.tabs button{flex:1;background:transparent;color:var(--mute);border:0;border-right:1px solid var(--line);padding:9px 4px;font:inherit;cursor:pointer}
 nav.tabs button:last-child{border-right:0}
 nav.tabs button.on{color:var(--hot);background:#221014}
-#panel{padding:8px 10px 10px;flex:1}
-.card{background:var(--panel);border:1px solid var(--line);padding:8px;margin-bottom:8px}
+#panel{padding:8px 10px 10px;overflow:auto;flex:1 1 auto;min-height:0}
+.card{background:color-mix(in srgb,var(--panel) 92%,transparent);border:1px solid var(--line);padding:8px;margin-bottom:8px}
 .card h3{color:var(--hot);font-size:11px;margin-bottom:4px;letter-spacing:.06em}
 .muted{color:var(--mute)}
 .ok{color:var(--ok)}
@@ -57,7 +59,7 @@ button.act.bad{color:#f0c0b0;border-color:var(--bad)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .item{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid #2a1612}
 .item:last-child{border-bottom:0}
-#log{max-height:72px;overflow:auto;color:var(--mute);font-size:11px;padding:0 10px 8px}
+#log{max-height:56px;overflow:auto;color:var(--mute);font-size:11px;padding:0 10px 8px;flex-shrink:0;border-top:1px solid #2a1612}
 #log div{margin-bottom:2px}
 .overlay{position:fixed;inset:0;background:#10080acc;display:flex;align-items:flex-end;justify-content:center;z-index:20}
 .overlay .sheet{width:100%;max-width:460px;background:#160b0e;border-top:1px solid var(--acc);padding:14px 12px 18px}
@@ -71,6 +73,16 @@ button.act.bad{color:#f0c0b0;border-color:var(--bad)}
 button.act.stance{padding:12px 12px;text-align:left;min-height:68px}
 button.act.stance b{display:block;letter-spacing:.1em;margin-bottom:4px;font-size:13px}
 .stance-tag{color:var(--hot);letter-spacing:.1em;font-weight:700}
+@media (min-width:880px){
+  header{position:absolute;top:10px;left:12px;right:auto;width:min(520px,calc(100% - 400px));border:1px solid var(--line);background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  #hud{background:color-mix(in srgb,var(--panel) 80%,transparent)}
+  #mapwrap{position:absolute;inset:0;flex:none;z-index:0}
+  #dock{position:absolute;top:10px;right:10px;bottom:10px;width:min(368px,34vw);max-height:none;border:1px solid var(--line);border-top:1px solid var(--line);background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  .legend{left:14px;bottom:14px;background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .card{background:color-mix(in srgb,var(--panel) 82%,transparent)}
+  .overlay{align-items:center}
+  .overlay .sheet{max-width:560px;border:1px solid var(--acc);margin:16px}
+}
 </style>
 </head>
 <body>
@@ -526,7 +538,7 @@ function mapSvg(){
       <text x="${s.x+(s.lx??9)}" y="${s.y+(s.ly??-7)}">${s.rich?'★ ':''}${s.name}</text>
     </g>`;
   }).join('');
-  return `<svg class="map" viewBox="0 0 340 300" xmlns="http://www.w3.org/2000/svg">${lanes}${npcs}${sys}</svg>`;
+  return `<svg class="map" viewBox="0 0 340 300" preserveAspectRatio="xMidYMid meet" font-size="8" xmlns="http://www.w3.org/2000/svg">${lanes}${npcs}${sys}</svg>`;
 }
 
 function fleetPanel(){
@@ -672,6 +684,7 @@ function howSheet(){
 
 function render(){
   const app=$('#app');
+  app.className = splash ? 'splash' : 'play';
   if(splash){
     app.innerHTML = `<header><div class="row"><div class="brand">HOSTILE PINCH</div><div class="sub">ECONOMY LAB</div></div></header>${splashSheet()}${how?howSheet():''}`;
     bind(); return;
@@ -693,13 +706,15 @@ function render(){
     <div id="mapwrap">${mapSvg()}
       <div class="legend"><b style="color:#c44a3a">W</b> War <b style="color:#c47848">P</b> Pirate <b style="color:#6a8a9a">L</b> Patrol <b style="color:#7a9a6a">T</b> Trade · ★ rich hub</div>
     </div>
-    <nav class="tabs">
-      <button data-tab="travel" class="${tab==='travel'?'on':''}">TRAVEL</button>
-      <button data-tab="market" class="${tab==='market'?'on':''}">MARKET</button>
-      <button data-tab="fleet" class="${tab==='fleet'?'on':''}">FLEET</button>
-    </nav>
-    <div id="panel">${tab==='fleet'?fleetPanel():tab==='market'?marketPanel():travelPanel()}</div>
-    ${logHtml()}
+    <div id="dock">
+      <nav class="tabs">
+        <button data-tab="travel" class="${tab==='travel'?'on':''}">TRAVEL</button>
+        <button data-tab="market" class="${tab==='market'?'on':''}">MARKET</button>
+        <button data-tab="fleet" class="${tab==='fleet'?'on':''}">FLEET</button>
+      </nav>
+      <div id="panel">${tab==='fleet'?fleetPanel():tab==='market'?marketPanel():travelPanel()}</div>
+      ${logHtml()}
+    </div>
     ${modal&&modal.kind==='enc'?encSheet():''}
     ${modal&&modal.kind==='end'?endSheet():''}
     ${how?howSheet():''}
